@@ -21,7 +21,6 @@ def connection_check(function: DecoratedFunction) -> DecoratedFunction:
         if not pg.connected:
             raise RuntimeError('Connection to Postgres is not set!')
         return await function(*args, **kwargs)
-
     return wrapper
 
 
@@ -47,22 +46,22 @@ class PostgresManager:
         return await self.__connection.fetchval(query, *args, timeout=timeout)
 
     async def fetchrow(
-            self,
-            query: str,
-            *args,
-            timeout: int | None = None,
-            record_class: type | None = None
+        self,
+        query: str,
+        *args,
+        timeout: int | None = None,
+        record_class: type | None = None
     ):
         return await self.__connection.fetchrow(
             query, *args, timeout=timeout, record_class=record_class
         )
 
     async def fetch(
-            self,
-            query: str,
-            *args,
-            timeout: int | None = None,
-            record_class: type | None = None
+        self,
+        query: str,
+        *args,
+        timeout: int | None = None,
+        record_class: type | None = None
     ):
         return await self.__connection.fetch(
             query, *args, timeout=timeout, record_class=record_class
@@ -99,12 +98,12 @@ class Table:
     @classmethod
     @connection_check
     async def _get(
-            cls,
-            where: str | None = None,
-            limit: int | None = None,
-            offset: int | None = None,
-            order_by: str | None = None,
-            single: bool = False
+        cls,
+        where: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        order_by: str | None = None,
+        single: bool = False
     ) -> list[ModelType] | None | ModelType:
         where_clause = f' WHERE {where}' if where else ''
         order_by_clause = f' ORDER BY {order_by}' if order_by else ''
@@ -127,13 +126,13 @@ class Table:
     @classmethod
     @connection_check
     async def _update(
-            cls,
-            data: Any,
-            pk: str,
-            included: Iterable = (),
-            excluded: Iterable = (),
-            where: str | None = None,
-            single: bool = False,
+        cls,
+        data: Any,
+        pk: str,
+        included: Iterable = (),
+        excluded: Iterable = (),
+        where: str | None = None,
+        single: bool = False,
     ) -> list[ModelType] | None | ModelType:
         data = data.dict()
 
@@ -342,10 +341,7 @@ class Tournaments(Table):
             """,
             tour_id
         )
-        result_serialized = []
-        for item in result:
-            result_serialized.append(dto.Teams.parse_obj(dict(item.items())))
-        return result_serialized
+        return [dto.Teams.parse_obj(dict(item.items())) for item in result]
 
     @classmethod
     @connection_check
