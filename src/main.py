@@ -11,6 +11,7 @@ import exceptions
 import settings
 from postgres import pg, migrate, UserTable, fixture
 from bracket import TournamentBracket
+from fastapi.middleware.cors import CORSMiddleware
 
 
 @asynccontextmanager
@@ -20,6 +21,23 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "http://0.0.0.0",
+    "http://0.0.0.0:8000",
+    "http://localhost",
+    "http://localhost:8000",
+    f"http://{settings.REMOTE_SERVER_HOST}",  # noqa
+    f"http://{settings.REMOTE_SERVER_HOST}:80",  # noqa
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(exceptions.ServiceException)

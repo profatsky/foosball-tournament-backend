@@ -9,3 +9,4 @@ if authjwt_secret_key is None:
 SERVER_HOST = env.str('SERVER_HOST', default='0.0.0.0')
 SERVER_PORT = env.int('SERVER_PORT', default=8000)
 DEBUG = env.bool("DEBUG", default=False)
+REMOTE_SERVER_HOST = env.str('REMOTE_SERVER_HOST')
