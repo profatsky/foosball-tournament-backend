@@ -15,6 +15,33 @@ services:
       timeout: 2s
       retries: 10
 
+  nginx:
+    build: ./nginx
+    depends_on:
+      - service
+    volumes:
+      - ./static:/static/
+      - ./media:/media/
+    ports:
+      - "80:80"
+      - "443:443"
+
+  service:
+    build:
+      context: .
+    command: python src/main.py
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=True
+      - PYTHONPATH=/app
+      - authjwt_secret_key=iwonttellya
+      - POSTGRES_DSN=postgres://postgres:postgres@postgres/postgres
+    ports:
+      - "8000:8000"
+
 
 volumes:
   postgres-data:

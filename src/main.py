@@ -36,7 +36,7 @@ def auth_config():
     ]
 
 
-@app.get('/')
+@app.get('/health')
 async def health(authorize: AuthJWT = Depends()):
     authorize.jwt_required()
     return authorize.get_jwt_subject()
