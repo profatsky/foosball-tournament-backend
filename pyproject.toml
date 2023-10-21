@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Backend for Foosball Tournament Service"
 authors = ["Oleg Pukhov <opuhov@evapps.ru>"]
 readme = "README.md"
-packages = [{include = "foosball_tournament_backend"}]
+packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
