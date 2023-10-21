@@ -21,6 +21,7 @@ def connection_check(function: DecoratedFunction) -> DecoratedFunction:
         if not pg.connected:
             raise RuntimeError('Connection to Postgres is not set!')
         return await function(*args, **kwargs)
+
     return wrapper
 
 
@@ -46,22 +47,22 @@ class PostgresManager:
         return await self.__connection.fetchval(query, *args, timeout=timeout)
 
     async def fetchrow(
-        self,
-        query: str,
-        *args,
-        timeout: int | None = None,
-        record_class: type | None = None
+            self,
+            query: str,
+            *args,
+            timeout: int | None = None,
+            record_class: type | None = None
     ):
         return await self.__connection.fetchrow(
             query, *args, timeout=timeout, record_class=record_class
         )
 
     async def fetch(
-        self,
-        query: str,
-        *args,
-        timeout: int | None = None,
-        record_class: type | None = None
+            self,
+            query: str,
+            *args,
+            timeout: int | None = None,
+            record_class: type | None = None
     ):
         return await self.__connection.fetch(
             query, *args, timeout=timeout, record_class=record_class
@@ -98,12 +99,12 @@ class Table:
     @classmethod
     @connection_check
     async def _get(
-        cls,
-        where: str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        order_by: str | None = None,
-        single: bool = False
+            cls,
+            where: str | None = None,
+            limit: int | None = None,
+            offset: int | None = None,
+            order_by: str | None = None,
+            single: bool = False
     ) -> list[ModelType] | None | ModelType:
         where_clause = f' WHERE {where}' if where else ''
         order_by_clause = f' ORDER BY {order_by}' if order_by else ''
@@ -126,13 +127,13 @@ class Table:
     @classmethod
     @connection_check
     async def _update(
-        cls,
-        data: Any,
-        pk: str,
-        included: Iterable = (),
-        excluded: Iterable = (),
-        where: str | None = None,
-        single: bool = False,
+            cls,
+            data: Any,
+            pk: str,
+            included: Iterable = (),
+            excluded: Iterable = (),
+            where: str | None = None,
+            single: bool = False,
     ) -> list[ModelType] | None | ModelType:
         data = data.dict()
 
@@ -254,109 +255,6 @@ async def migrate():
         """)
 
 
-async def fixture():
-    async with pg:
-        await pg.execute(f""" 
-        insert into users (
-        user_id, nickname, image_path, created_at, password, login
-        ) 
-        values (
-        1, 'Vacilie', '', timestamp '2000-01-01 04:04:04', {UserTable.get_hashed_password('12345')!r}, 'valicie'
-        );
-        insert into users (
-        user_id, nickname, image_path, created_at, password, login
-        ) 
-        values (
-        2, 'Artem', '', timestamp '2000-01-01 04:04:04', {UserTable.get_hashed_password('12345')!r}, 'artem'
-        );
-        insert into users (
-        user_id, nickname, image_path, created_at, password, login
-        ) 
-        values (
-        3, 'Michael', '', timestamp '2000-01-01 04:04:04', {UserTable.get_hashed_password('12345')!r}, 'michael'
-        );
-        insert into users (
-        user_id, nickname, image_path, created_at, password, login
-        ) 
-        values (
-        4, 'Petr', '', timestamp '2000-01-01 04:04:04', {UserTable.get_hashed_password('12345')!r}, 'petr'
-        );
-        insert into users (
-        user_id, nickname, image_path, created_at, password, login
-        ) 
-        values (
-        5, 'Maxim', '', timestamp '2000-01-01 04:04:04', {UserTable.get_hashed_password('12345')!r}, 'maxim'
-        );
-        insert into users (
-        user_id, nickname, image_path, created_at, password, login
-        ) 
-        values (
-        6, 'Valeria', '', timestamp '2000-01-01 04:04:04', {UserTable.get_hashed_password('12345')!r}, 'valeria'
-        );
-        insert into users (
-        user_id, nickname, image_path, created_at, password, login
-        ) 
-        values (
-        7,'Alexandr', '', timestamp '2000-01-01 04:04:04', {UserTable.get_hashed_password('12345')!r}, 'alexandr'
-        );
-        insert into users (
-        user_id, nickname, image_path, created_at, password, login
-        ) 
-        values (
-        8, 'Oleg', '', timestamp '2000-01-01 04:04:04', {UserTable.get_hashed_password('12345')!r}, 'oleg'
-        );
-        
-        
-        insert into teams (
-        team_id, title, image_path, created_at, first_participant_id, second_participant_id
-        )
-         values (
-         1, 'Tracking', 'http://dfgvegreg', timestamp '2000-01-01 04:04:04', 1, 2
-         );
-        insert into teams (
-        team_id, title, image_path, created_at, first_participant_id, second_participant_id
-        ) 
-        values (
-        2, 'Frozen', 'http://dfgvegreg', timestamp  '2000-01-01 04:04:04', 3, 4
-        );
-        insert into teams (
-        team_id, title, image_path, created_at, first_participant_id, second_participant_id
-        ) 
-        values (
-        3, 'Poel', 'http://dfgvegreg',  timestamp '2000-01-01 04:04:04', 5, 6
-        );
-        insert into teams (
-        team_id, title, image_path, created_at, first_participant_id, second_participant_id
-        ) 
-        values (
-        4, 'Sila', 'http://dfgvegreg',  timestamp '2000-01-01 04:04:04', 7, 8
-        );
-        
-        insert into tournaments (
-        tour_id, title, started_at, finished_at, description, status, winner_id
-        )
-        values (
-        1, 'test1', timestamp '2000-01-01 04:04:04', timestamp '2001-01-01 04:04:04', 'text', 'started', null
-        );
-        
-        insert into matches (
-        match_id, tour_id, first_team_id, second_team_id, winner_id, parent_id, started_at
-        )
-        values (3, 1, 1, 3, 3, null, timestamp '2000-01-01 04:04:04');
-        insert into matches (
-        match_id, tour_id, first_team_id, second_team_id, winner_id, parent_id, started_at
-        ) 
-        values (2, 1, 1, 2, 1, 3, timestamp '2000-01-01 04:04:04');
-        insert into matches (
-        match_id, tour_id, first_team_id, second_team_id, winner_id, parent_id, started_at
-        ) 
-        values (1, 1, 3, 4, 3, 3, timestamp '2000-01-01 04:04:04');
-        
-        update tournaments set winner_id = 2 where tour_id = 1;
-    """)
-    return True
-
-
 class UserTable(Table):
     table = 'users'
     model = dto.User
@@ -400,3 +298,57 @@ class UserTable(Table):
                 login,
             )
         )
+
+
+class Tournaments(Table):
+    table = 'tournaments'
+    model = dto.Tournament
+
+    @classmethod
+    @connection_check
+    async def get_list(cls) -> list[dto.Tournament]:
+        async with pg:
+            return await pg.fetch(
+                """
+                    SELECT tour_id, tournaments.title, started_at, 
+                    finished_at, description, status, 
+                    teams.title as winner_team, winner_id from tournaments 
+                    join teams on tournaments.winner_id = teams.team_id
+                """,
+            )
+
+    @classmethod
+    @connection_check
+    async def get(cls, tour_id: int) -> dto.Tournament:
+        return await pg.fetchrow(
+            """SELECT tour_id, tournaments.title, started_at,
+             finished_at, description, 
+             status, teams.title as winner_team, winner_id 
+             from teams join tournament_teams on tournament_teams.team_id = teams.team_id
+             join tournaments on tournaments.tour_id = tournament_teams.tournament_id 
+             where tournaments.tour_id = $1""",
+            tour_id
+        )
+
+    @classmethod
+    @connection_check
+    async def get_teams(cls, tour_id: int) -> list[dto.Teams]:
+        result = await pg.fetch(
+            """SELECT team_number, team.title, team.team_id,
+            team.created_at from
+            tournament_teams as tour join teams as team on
+            tour.team_id = team.team_id
+            where tournament_id = $1
+            """,
+            tour_id
+        )
+        result_serialized = []
+        for item in result:
+            result_serialized.append(dto.Teams.parse_obj(dict(item.items())))
+        return result_serialized
+
+    @classmethod
+    @connection_check
+    async def add(cls, tournament: dto.CreateTournament) -> ModelType:
+        return await cls._add(tournament)
+

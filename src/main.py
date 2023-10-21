@@ -9,7 +9,7 @@ from fastapi_jwt_auth.exceptions import AuthJWTException
 import dto
 import exceptions
 import settings
-from postgres import pg, migrate, UserTable, fixture
+from postgres import pg, migrate, UserTable, Tournaments
 
 
 @asynccontextmanager
@@ -67,11 +67,6 @@ async def login(user: dto.UserLogin, authorize: AuthJWT = Depends()) -> dto.User
     return existing
 
 
-@app.get('/fixtures/include')
-async def include_fixtures():
-    return await fixture()
-
-
 @app.get('/users/me', response_model=dto.User)
 async def user_profile(authorize: AuthJWT = Depends()) -> dto.User:
     authorize.jwt_required()
@@ -99,13 +94,31 @@ async def team_info(team_id: int):
         )
 
 
+@app.get('/tournaments', response_model=list[dto.Tournament])
+async def show_tournaments():
+    async with pg:
+        return await Tournaments.get_list()
+
+
+@app.get('/tournaments/{tour_id}/teams', response_model=list[dto.Teams])
+async def show_teams_tournament(tour_id: int):
+    async with pg:
+        return await Tournaments.get_teams(tour_id)
+
+
 @app.get('/tournaments/{tour_id}', response_model=dto.Tournament)
 async def tournaments_info(tour_id: int):
     async with pg:
-        return await pg.fetchrow(
-            """SELECT * from tournaments where tour_id = $1""",
-            tour_id
-        )
+        tour: dto.Tournament | None = await Tournaments.get(tour_id)
+        if tour is None:
+            raise exceptions.NotFoundError("Данного турнира не существует")
+        return tour
+
+
+@app.post('/tournaments/add', response_model=dto.Tournament)
+async def add_tournament(tournament: dto.CreateTournament):
+    async with pg:
+        return await Tournaments.add(tournament)
 
 
 if __name__ == '__main__':

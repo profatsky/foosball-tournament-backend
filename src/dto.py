@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, UTC
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class UserRegistration(BaseModel):
@@ -25,11 +25,20 @@ class User(BaseModel):
 class Tournament(BaseModel):
     tour_id: int
     title: str
+    started_at: datetime = Field(default_factory=lambda _: datetime.now(UTC))
+    finished_at: datetime = Field(default_factory=lambda _: datetime.now(UTC))
+    description: str
+    status: str
+    winner_team: str | None = None
+    winner_id: int | None = None
+
+
+class CreateTournament(BaseModel):
+    title: str
     started_at: datetime
     finished_at: datetime
     description: str
     status: str
-    winner_id: int | None = None
 
 
 class Team(BaseModel):
@@ -39,3 +48,10 @@ class Team(BaseModel):
     created_at: datetime
     first_participant_id: int | None = None
     second_participant_id: int | None = None
+
+
+class Teams(BaseModel):
+    team_id: int
+    title: str
+    image_path: str | None = None
+    created_at: datetime
