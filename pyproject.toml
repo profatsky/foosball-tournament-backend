@@ -15,6 +15,8 @@ pydantic = "1.10.13"
 envparse = "^0.2.0"
 uvicorn = "^0.23.2"
 uvloop = "^0.18.0"
+fastapi-jwt-auth = "^0.5.0"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 
 
 [build-system]
