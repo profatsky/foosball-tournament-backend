@@ -77,11 +77,14 @@ async def include_fixtures():
     return await fixture()
 
 
-@app.get('/user/profile', response_model=list[dto.User])
-async def user_profile():
+@app.get('/user', response_model=list[dto.User])
+async def user_profile(authorize: AuthJWT = Depends()):
+    authorize.jwt_required()
+    user_login = authorize.get_jwt_subject()
     async with pg:
         return await pg.fetch(
-            """SELECT user_id, nickname, image_path from users"""
+            """SELECT user_id, nickname, image_path from users where login = $1""",
+            user_login
         )
 
 
@@ -107,19 +110,12 @@ async def tournaments_info(tour_id: int):
         )
 
 
-@app.get('/test')
-async def test_pg():
-    async with pg:
-        return await pg.execute('SELECT * from teams')
-
-
 if __name__ == '__main__':
-    # move out to settings
     uvicorn.run(
         'main:app',
-        host='127.0.0.1',
-        port=8000,
+        host=settings.SERVER_HOST,
+        port=settings.SERVER_PORT,
+        reload=settings.DEBUG,
         loop='uvloop',
-        reload=True,
         use_colors=True
     )
