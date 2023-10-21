@@ -6,19 +6,18 @@ from pydantic import BaseModel
 class UserRegistration(BaseModel):
     password: str
     login: str
-    nickname: str
     image_path: str | None = None
     created_at = datetime.now()
 
 
 class UserLogin(BaseModel):
-    login: str | None = None
-    nickname: str | None = None
+    login: str
     password: str
 
 
 class User(BaseModel):
     user_id: int
+    login: str
     nickname: str
     image_path: str | None = None
 

@@ -1,12 +1,13 @@
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
 from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
 
 import dto
+import exceptions
 import settings
 from postgres import pg, migrate, UserTable, fixture
 
@@ -20,6 +21,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+@app.exception_handler(exceptions.ServiceException)
 @app.exception_handler(AuthJWTException)
 def missing_token_error_handler(_, exc):
     return JSONResponse(
@@ -38,7 +40,6 @@ def auth_config():
 
 @app.get('/health')
 async def health(authorize: AuthJWT = Depends()):
-    authorize.jwt_required()
     return authorize.get_jwt_subject()
 
 
@@ -48,28 +49,22 @@ def set_tokens_in_cookies(authorize: AuthJWT, subject: str):
         getattr(authorize, f'set_{token}_cookies')(created_token)
 
 
-@app.post('/registration')
-async def register(user: dto.UserRegistration, authorize: AuthJWT = Depends()):
+@app.post('/registration', response_model=dto.User)
+async def register(user: dto.UserRegistration, authorize: AuthJWT = Depends()) -> dto.User:
     async with pg:
-        if await UserTable.exists(user.login, user.nickname):
-            return HTTPException(
-                status_code=400,
-                detail='Пользователь с таким логином или ником уже существует'
-            )
+        if await UserTable.exists(user.login):
+            raise exceptions.BadRequestError('Пользователь с таким логином уже существует')
         created_user = await UserTable.add(user)
 
     set_tokens_in_cookies(authorize, created_user.login)
     return created_user
 
 
-@app.post('/login')
-async def login(user: dto.UserLogin, authorize: AuthJWT = Depends()):
-    if user.login is None and user.nickname is None:
-        return HTTPException(status_code=400, detail="you didn't provide neither login nor nickname")
-
-    set_tokens_in_cookies(authorize, user.login)
-
-    return 'logged in!'
+@app.post('/login', response_model=dto.User)
+async def login(user: dto.UserLogin, authorize: AuthJWT = Depends()) -> dto.User:
+    existing = await UserTable.get_by_login(user.login)
+    set_tokens_in_cookies(authorize, existing.login)
+    return existing
 
 
 @app.get('/fixtures/include')
@@ -77,15 +72,18 @@ async def include_fixtures():
     return await fixture()
 
 
-@app.get('/user', response_model=list[dto.User])
-async def user_profile(authorize: AuthJWT = Depends()):
+@app.get('/users/me', response_model=dto.User)
+async def user_profile(authorize: AuthJWT = Depends()) -> dto.User:
     authorize.jwt_required()
     user_login = authorize.get_jwt_subject()
     async with pg:
-        return await pg.fetch(
-            """SELECT user_id, nickname, image_path from users where login = $1""",
-            user_login
-        )
+        return await UserTable.get_by_login(user_login)
+
+
+@app.get('/users/{user_id}', response_model=dto.User)
+async def user_detail(user_id: int) -> dto.User:
+    async with pg:
+        return await UserTable.get_by_id(user_id)
 
 
 @app.get('/teams/{team_id}', response_model=dto.Team)
