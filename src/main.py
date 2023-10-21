@@ -9,6 +9,7 @@ from fastapi_jwt_auth.exceptions import AuthJWTException
 import dto
 import settings
 from postgres import pg, migrate, UserTable, fixture
+from bracket import TournamentBracket
 
 
 @asynccontextmanager
@@ -108,6 +109,22 @@ async def tournaments_info(tour_id: int):
             """SELECT * from tournaments where tour_id = $1""",
             tour_id
         )
+
+
+@app.get('/tournaments/{tour_id}/bracket', response_model=list[dto.Match])
+async def tournament_bracket(tour_id: int):
+    async with pg:
+        teams = await pg.fetch(
+            """
+                SELECT * FROM teams
+                JOIN tournament_teams USING (team_id)
+                WHERE tournament_teams.tournament_id = $1
+            """,
+            tour_id
+        )
+    bracket = TournamentBracket(tour_id=tour_id, teams=teams)
+    matches = bracket.get_matches()
+    return matches
 
 
 if __name__ == '__main__':

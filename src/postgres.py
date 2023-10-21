@@ -228,19 +228,19 @@ async def migrate():
             );
             
             create table if not exists matches (
-                match_id serial primary key,
+                match_uuid text primary key,
                 tour_id integer not null,
-                first_team_id integer not null,
-                second_team_id integer not null,
-                winner_id integer not null,
-                parent_id integer null,
+                first_team_id integer,
+                second_team_id integer,
+                winner_id integer,
+                parent_id integer,
                 started_at timestamp not null,
                 
                 constraint tournaments_fk foreign key (tour_id) references tournaments (tour_id) on delete cascade,
                 constraint first_team_fk foreign key (first_team_id) references teams (team_id) on delete restrict,
                 constraint second_team_fk foreign key (second_team_id) references teams (team_id) on delete restrict,
                 constraint winner_team_fk foreign key (winner_id) references teams (team_id) on delete restrict,
-                constraint parent_match_fk foreign key (parent_id) references matches (match_id) on delete restrict
+                constraint parent_match_fk foreign key (parent_id) references matches (match_uuid) on delete restrict
             );
             
             create table if not exists tournament_teams (
