@@ -6,6 +6,7 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 
 import dto
+import exceptions
 import settings
 
 DecoratedFunction = TypeVar('DecoratedFunction', bound=Callable[..., Any])
@@ -72,8 +73,7 @@ pg = PostgresManager()
 
 class Table:
     table: str
-    output_model: Type[ModelType]
-    input_model: Type[ModelType]
+    model: Type[ModelType]
 
     @classmethod
     @connection_check
@@ -92,7 +92,7 @@ class Table:
 
         sql = f'INSERT INTO {cls.table} ({columns}) VALUES ({placeholders}) RETURNING *;'
         record: asyncpg.Record = await pg.fetchrow(sql, *values)
-        answer = cls.input_model.parse_obj(dict(record.items()))
+        answer = cls.model.parse_obj(dict(record.items()))
         return answer
 
     @classmethod
@@ -114,7 +114,7 @@ class Table:
 
         answer = []
         for record in records:
-            answer.append(cls.output_model.parse_obj(dict(record.items())))
+            answer.append(cls.model.parse_obj(dict(record.items())))
 
         if single and answer:
             return answer[0]
@@ -171,7 +171,7 @@ class Table:
         records: list[asyncpg.Record] = await pg.fetch(sql, *values)
         answer = []
         for record in records:
-            answer.append(cls.input_model.parse_obj(dict(record.items())))
+            answer.append(cls.model.parse_obj(dict(record.items())))
 
         if single and answer:
             return answer[0]
@@ -359,8 +359,7 @@ async def fixture():
 
 class UserTable(Table):
     table = 'users'
-    input_model = dto.UserRegistration
-    output_model = dto.UserLogin
+    model = dto.User
 
     @classmethod
     def get_hashed_password(cls, password: str) -> str:
@@ -371,17 +370,33 @@ class UserTable(Table):
         return password_ctx.verify(plain_password, hashed_password)
 
     @classmethod
-    async def add(cls, user: dto.UserRegistration) -> dto.UserRegistration:
+    @connection_check
+    async def get_by_login(cls, login: str) -> dto.User:
+        user: dto.User | None = await cls._get(where=f'login = {login!r}', single=True)
+        if user is None:
+            raise exceptions.NotFoundError(f'Пользователь с логином: {login!r} не найден.')
+        return user
+
+    @classmethod
+    @connection_check
+    async def get_by_id(cls, user_id: int) -> dto.User:
+        user: dto.User | None = await cls._get(where=f'user_id = {user_id}', single=True)
+        if user is None:
+            raise exceptions.NotFoundError(f'Пользователь с ID: {user_id} не найден.')
+        return user
+
+    @classmethod
+    @connection_check
+    async def add(cls, user: dto.UserRegistration) -> dto.User:
         user.password = cls.get_hashed_password(user.password)
         return await cls._add(user)
 
     @classmethod
     @connection_check
-    async def exists(cls, login: str, nickname: str) -> bool:
+    async def exists(cls, login: str) -> bool:
         return bool(
             await pg.fetchval(
-                f"""select true from users where login = $1 or nickname = $2""",
+                f"""select true from users where login = $1""",
                 login,
-                nickname,
             )
         )
