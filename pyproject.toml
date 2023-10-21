@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "foosball-tournament-backend"
+version = "0.1.0"
+description = "Backend for Foosball Tournament Service"
+authors = ["Oleg Pukhov <opuhov@evapps.ru>"]
+readme = "README.md"
+packages = [{include = "foosball_tournament_backend"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.104.0"
+pytest = "^7.4.2"
+asyncpg = "^0.28.0"
+pydantic = "1.10.13"
+envparse = "^0.2.0"
+uvicorn = "^0.23.2"
+uvloop = "^0.18.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
