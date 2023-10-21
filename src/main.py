@@ -1,5 +1,3 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from postgres import pg, migrate
 import uvicorn
@@ -7,10 +5,9 @@ import uvicorn
 app = FastAPI()
 
 
-@asynccontextmanager
-async def lifespan():
+@app.on_event('startup')
+async def init_db():
     await migrate()
-    yield
 
 
 @app.get('/')
