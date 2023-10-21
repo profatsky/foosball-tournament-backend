@@ -23,11 +23,9 @@ async def lifespan(_: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 origins = [
-    "http://0.0.0.0",
-    "http://0.0.0.0:8000",
-    "http://localhost",
-    "http://localhost:8000",
+    "http://localhost:3000",
     f"http://{settings.REMOTE_SERVER_HOST}",  # noqa
+    f"http://{settings.REMOTE_SERVER_HOST}:3000",  # noqa
     f"http://{settings.REMOTE_SERVER_HOST}:80",  # noqa
 ]
 
@@ -71,7 +69,7 @@ def set_tokens_in_cookies(authorize: AuthJWT, subject: str):
 @app.post('/registration', response_model=dto.User)
 async def register(user: dto.UserRegistration, authorize: AuthJWT = Depends()) -> dto.User:
     async with pg:
-        if await UserTable.exists(user.login):
+        if await UserTable.exists(user.login, user.nickname):
             raise exceptions.BadRequestError('Пользователь с таким логином уже существует')
         created_user = await UserTable.add(user)
 

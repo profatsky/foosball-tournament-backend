@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class UserRegistration(BaseModel):
     password: str
     login: str
+    nickname: str
     image_path: str | None = None
     created_at = datetime.now()
 

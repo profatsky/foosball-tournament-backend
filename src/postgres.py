@@ -393,10 +393,10 @@ class UserTable(Table):
 
     @classmethod
     @connection_check
-    async def exists(cls, login: str) -> bool:
+    async def exists(cls, login: str, nickname: str) -> bool:
         return bool(
             await pg.fetchval(
-                f"""select true from users where login = $1""",
-                login,
+                f"""select true from users where login = $1 or nickname = $2""",
+                login, nickname
             )
         )
