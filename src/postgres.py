@@ -82,3 +82,106 @@ async def migrate():
                 constraint tournament_fk foreign key (tournament_id) references tournaments (tour_id) on delete restrict
             );
         """)
+
+
+async def fixture():
+    async with pg:
+        await pg.execute(""" 
+        insert into users (
+        user_id, nickname, image_path, created_at, password, login
+        ) 
+        values (
+        1, 'Vacilie', '', timestamp '2000-01-01 04:04:04', '12345', 'valicie'
+        );
+        insert into users (
+        user_id, nickname, image_path, created_at, password, login
+        ) 
+        values (
+        2, 'Artem', '', timestamp '2000-01-01 04:04:04', '12345', 'artem'
+        );
+        insert into users (
+        user_id, nickname, image_path, created_at, password, login
+        ) 
+        values (
+        3, 'Michael', '', timestamp '2000-01-01 04:04:04', '12345', 'michael'
+        );
+        insert into users (
+        user_id, nickname, image_path, created_at, password, login
+        ) 
+        values (
+        4, 'Petr', '', timestamp '2000-01-01 04:04:04', '12345', 'petr'
+        );
+        insert into users (
+        user_id, nickname, image_path, created_at, password, login
+        ) 
+        values (
+        5, 'Maxim', '', timestamp '2000-01-01 04:04:04', '12345', 'maxim'
+        );
+        insert into users (
+        user_id, nickname, image_path, created_at, password, login
+        ) 
+        values (
+        6, 'Valeria', '', timestamp '2000-01-01 04:04:04', '12345', 'valeria'
+        );
+        insert into users (
+        user_id, nickname, image_path, created_at, password, login
+        ) 
+        values (
+        7,'Alexandr', '', timestamp '2000-01-01 04:04:04', '12345', 'alexandr'
+        );
+        insert into users (
+        user_id, nickname, image_path, created_at, password, login
+        ) 
+        values (
+        8, 'Oleg', '', timestamp '2000-01-01 04:04:04', '12345', 'oleg'
+        );
+        
+        
+        insert into teams (
+        team_id, title, image_path, created_at, first_participant_id, second_participant_id
+        )
+         values (
+         1, 'Tracking', 'http://dfgvegreg', timestamp '2000-01-01 04:04:04', 1, 2
+         );
+        insert into teams (
+        team_id, title, image_path, created_at, first_participant_id, second_participant_id
+        ) 
+        values (
+        2, 'Frozen', 'http://dfgvegreg', timestamp  '2000-01-01 04:04:04', 3, 4
+        );
+        insert into teams (
+        team_id, title, image_path, created_at, first_participant_id, second_participant_id
+        ) 
+        values (
+        3, 'Poel', 'http://dfgvegreg',  timestamp '2000-01-01 04:04:04', 5, 6
+        );
+        insert into teams (
+        team_id, title, image_path, created_at, first_participant_id, second_participant_id
+        ) 
+        values (
+        4, 'Sila', 'http://dfgvegreg',  timestamp '2000-01-01 04:04:04', 7, 8
+        );
+        
+        insert into tournaments (
+        tour_id, title, started_at, finished_at, description, status, winner_id
+        )
+        values (
+        1, 'test1', timestamp '2000-01-01 04:04:04', timestamp '2001-01-01 04:04:04', 'text', 'started', null
+        );
+        
+        insert into matches (
+        match_id, tour_id, first_team_id, second_team_id, winner_id, parent_id, started_at
+        )
+        values (3, 1, 1, 3, 3, null, timestamp '2000-01-01 04:04:04');
+        insert into matches (
+        match_id, tour_id, first_team_id, second_team_id, winner_id, parent_id, started_at
+        ) 
+        values (2, 1, 1, 2, 1, 3, timestamp '2000-01-01 04:04:04');
+        insert into matches (
+        match_id, tour_id, first_team_id, second_team_id, winner_id, parent_id, started_at
+        ) 
+        values (1, 1, 3, 4, 3, 3, timestamp '2000-01-01 04:04:04');
+        
+        update tournaments set winner_id = 2 where tour_id = 1;
+    """)
+    return True
