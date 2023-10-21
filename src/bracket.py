@@ -1,4 +1,5 @@
 import math
+import random
 
 import dto
 
@@ -6,6 +7,7 @@ import dto
 class TournamentBracket:
     def __init__(self, tour_id: int, teams: list[dto.Team]):
         self.tour_id = tour_id
+        random.shuffle(teams)
         self.teams = self._number_the_teams_within_tournament(teams)
         self.teams_length = len(teams)
         self.matches = []
@@ -36,7 +38,7 @@ class TournamentBracket:
 
     def _divide_teams(self) -> list[dto.TournamentTeam | None]:
         divided_teams = [self.teams[0]]
-        temp: list[dto.Team | None] = self.teams[:][1:]
+        temp: list[dto.Team | None] = self.teams[1:]
         count = 0
 
         for i in range(0, int(2 ** math.ceil(math.log(self.teams_length, 2)) - self.teams_length)):
@@ -73,7 +75,7 @@ class TournamentBracket:
                 match = dto.Match(
                     tour_id=self.tour_id,
                     first_team_id=divided_teams[n].team_id,
-                    second_team_id=divided_teams[n].team_id + 1
+                    second_team_id=divided_teams[n + 1].team_id
                 )
                 first_round.append(match)
                 self.matches.append(match)

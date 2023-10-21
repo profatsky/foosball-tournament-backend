@@ -112,7 +112,7 @@ async def tournaments_info(tour_id: int):
 @app.get('/tournaments/{tour_id}/bracket', response_model=list[dto.Match])
 async def tournament_bracket(tour_id: int):
     async with pg:
-        teams = await pg.fetch(
+        teams_records = await pg.fetch(
             """
                 SELECT * FROM teams
                 JOIN tournament_teams USING (team_id)
@@ -120,6 +120,9 @@ async def tournament_bracket(tour_id: int):
             """,
             tour_id
         )
+
+    teams = [dto.Team(**dict(record.items())) for record in teams_records]
+
     bracket = TournamentBracket(tour_id=tour_id, teams=teams)
     matches = bracket.get_matches()
     return matches
