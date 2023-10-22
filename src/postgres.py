@@ -223,7 +223,9 @@ async def migrate():
                 description text not null,
                 status varchar not null,
                 winner_id integer,
+                owner_id integer not null,
                 
+                constraint user_fk foreign key (owner_id) references users (user_id) on delete restrict,
                 constraint winner_team_fk foreign key (winner_id) references teams (team_id)
             );
             
@@ -249,10 +251,8 @@ async def migrate():
                 team_id integer not null,
                 tournament_id integer not null,
                 team_number integer not null,
-                owner_id integer not null,
                 
                 constraint team_fk foreign key (team_id) references teams (team_id) on delete restrict,
-                constraint user_fk foreign key (owner_id) references users (user_id) on delete restrict,
                 constraint tournament_fk foreign key (tournament_id) references tournaments (tour_id) on delete restrict
             );
         """)
