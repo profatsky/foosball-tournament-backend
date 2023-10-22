@@ -206,7 +206,7 @@ async def migrate():
             create table if not exists teams (
                 team_id serial primary key,
                 title varchar(128) not null,
-                image_path text not null,
+                image_path text,
                 created_at timestamp not null,
                 first_participant_id integer not null,
                 second_participant_id integer not null,
@@ -218,11 +218,11 @@ async def migrate():
             create table if not exists tournaments (
                 tour_id serial primary key,
                 title varchar not null,
-                started_at timestamp not null,
-                finished_at timestamp not null,
+                started_at timestamp,
+                finished_at timestamp,
                 description text not null,
                 status varchar not null,
-                winner_id integer null,
+                winner_id integer,
                 
                 constraint winner_team_fk foreign key (winner_id) references teams (team_id)
             );
@@ -231,7 +231,9 @@ async def migrate():
                 match_uuid text primary key,
                 tour_id integer not null,
                 first_team_id integer,
+                first_team_score integer,
                 second_team_id integer,
+                second_team_score integer,
                 winner_id integer,
                 parent_uuid text,
                 started_at timestamp not null,
@@ -299,3 +301,61 @@ class UserTable(Table):
                 login, nickname
             )
         )
+
+
+class Tournaments(Table):
+    table = 'tournaments'
+    model = dto.Tournament
+
+    @classmethod
+    @connection_check
+    async def get_list(cls) -> list[dto.Tournament]:
+        # tournaments_records = await pg.fetch(
+        #     """
+        #         SELECT tour_id, tournaments.title as title, started_at,
+        #         finished_at, description, status, teams.title as team_title from tournaments
+        #         left join teams on tournaments.winner_id = teams.team_id
+        #     """,
+        # )
+        # return [dto.Tournament.parse_obj(dict(record.items())) for record in tournaments_records]
+        return await pg.fetch(
+            """
+                SELECT tour_id, tournaments.title as title, started_at,
+                finished_at, description, status, teams.title as team_title 
+                from tournaments 
+                left join teams on tournaments.winner_id = teams.team_id
+            """,
+        )
+
+    @classmethod
+    @connection_check
+    async def get(cls, tour_id: int) -> dto.Tournament:
+        return await pg.fetchrow(
+            """
+                SELECT tour_id, tournaments.title as title, started_at,
+                finished_at, description, status, teams.title as team_title 
+                from tournaments 
+                left join teams on tournaments.winner_id = teams.team_id
+                where tour_id = $1
+            """,
+            tour_id
+        )
+
+    @classmethod
+    @connection_check
+    async def get_teams(cls, tour_id: int) -> list[dto.Teams]:
+        result = await pg.fetch(
+            """
+            select team_number, title, team_id, created_at 
+            from tournament_teams as tour 
+            left join teams using(team_id)
+            where tournament_id = $1
+            """,
+            tour_id
+        )
+        return [dto.Teams.parse_obj(dict(item.items())) for item in result]
+
+    @classmethod
+    @connection_check
+    async def add(cls, tournament: dto.CreateTournament) -> ModelType:
+        return await cls._add(tournament)

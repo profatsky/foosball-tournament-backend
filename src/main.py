@@ -11,7 +11,7 @@ import dto
 import exceptions
 import settings
 from bracket import TournamentBracket
-from postgres import pg, migrate, UserTable
+from postgres import pg, migrate, UserTable, Tournaments
 
 
 @asynccontextmanager
@@ -116,13 +116,31 @@ async def team_info(team_id: int):
         )
 
 
+@app.get('/tournaments', response_model=list[dto.Tournament])
+async def show_tournaments():
+    async with pg:
+        return await Tournaments.get_list()
+
+
+@app.get('/tournaments/{tour_id}/teams', response_model=list[dto.Teams])
+async def show_teams_tournament(tour_id: int):
+    async with pg:
+        return await Tournaments.get_teams(tour_id)
+
+
 @app.get('/tournaments/{tour_id}', response_model=dto.Tournament)
 async def tournaments_info(tour_id: int):
     async with pg:
-        return await pg.fetchrow(
-            """SELECT * from tournaments where tour_id = $1""",
-            tour_id
-        )
+        tour: dto.Tournament | None = await Tournaments.get(tour_id)
+        if tour is None:
+            raise exceptions.NotFoundError(f"Турнира с ID={tour_id} не существует")
+        return tour
+
+
+@app.post('/tournaments/add', response_model=dto.Tournament)
+async def add_tournament(tournament: dto.CreateTournament):
+    async with pg:
+        return await Tournaments.add(tournament)
 
 
 @app.get('/tournaments/{tour_id}/bracket', response_model=list[dto.Match])
@@ -136,8 +154,12 @@ async def tournament_bracket(tour_id: int):
             """,
             tour_id
         )
+
     if not teams_records:
         return []
+
+    if len(teams_records) < 2:
+        raise exceptions.BadRequestError('Невозможно создать сетку из одной команды')
 
     teams = [dto.Team(**dict(record.items())) for record in teams_records]
 

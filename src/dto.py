@@ -24,20 +24,6 @@ class User(BaseModel):
     image_path: str | None = None
 
 
-class UserWithPassword(User):
-    password: str
-
-
-class Tournament(BaseModel):
-    tour_id: int
-    title: str
-    started_at: datetime
-    finished_at: datetime
-    description: str
-    status: str
-    winner_id: int | None = None
-
-
 class Team(BaseModel):
     team_id: int
     title: str
@@ -45,6 +31,36 @@ class Team(BaseModel):
     created_at: datetime
     first_participant_id: int | None = None
     second_participant_id: int | None = None
+
+
+class Teams(BaseModel):
+    team_id: int
+    team_number: int
+    title: str
+    image_path: str | None = None
+    created_at: datetime
+
+
+class UserWithPassword(User):
+    password: str
+
+
+class Tournament(BaseModel):
+    tour_id: int
+    title: str
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    description: str
+    status: str
+    team_title: str | None = None
+
+
+class CreateTournament(BaseModel):
+    title: str
+    started_at: datetime | None = Field(default=datetime.now(None))
+    finished_at: datetime | None = Field(default=datetime.now(None))
+    description: str
+    status: str
 
 
 class TournamentTeam(Team):
