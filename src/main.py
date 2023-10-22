@@ -143,6 +143,11 @@ async def tournament_bracket(tour_id: int):
 
     bracket = TournamentBracket(tour_id=tour_id, teams=teams)
     matches = bracket.get_matches()
+    for match in matches:
+        if match.participants and match.participants[1] is None:
+            match.participants.pop(1)
+        if match.participants and match.participants[0] is None:
+            match.participants.pop(0)
     return matches
 
 
