@@ -1,7 +1,8 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Extra
+import consts
 
 
 class UserRegistration(BaseModel):
@@ -51,16 +52,18 @@ class Tournament(BaseModel):
     started_at: datetime | None = None
     finished_at: datetime | None = None
     description: str
-    status: str
+    status: consts.TournamentStatus
     team_title: str | None = None
 
 
 class CreateTournament(BaseModel):
+    class Config:
+        extra = Extra.allow
     title: str
     started_at: datetime | None = Field(default=datetime.now(None))
     finished_at: datetime | None = Field(default=datetime.now(None))
     description: str
-    status: str
+    status: consts.TournamentStatus = consts.TournamentStatus.OPENED
 
 
 class TournamentTeam(Team):

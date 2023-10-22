@@ -51,7 +51,8 @@ def missing_token_error_handler(_, exc):
 def auth_config():
     return [
         ('authjwt_secret_key', settings.authjwt_secret_key),
-        ('authjwt_token_location', {'cookies'})
+        ('authjwt_token_location', {'headers', 'cookies'}),
+        ('authjwt_cookie_csrf_protect', False),
     ]
 
 
@@ -137,9 +138,13 @@ async def tournaments_info(tour_id: int) -> dto.Tournament:
         return tour
 
 
-@app.post('/tournaments/add', response_model=dto.Tournament)
-async def add_tournament(tournament: dto.CreateTournament) -> dto.Tournament:
+@app.post('/tournaments', response_model=dto.Tournament)
+async def add_tournament(tournament: dto.CreateTournament, authorize: AuthJWT = Depends()) -> dto.Tournament:
+    authorize.jwt_required()
+    user_login = authorize.get_jwt_subject()
     async with pg:
+        user = await UserTable.get_by_login(user_login)
+        tournament.owner_id = user.user_id
         return await Tournaments.add(tournament)
 
 

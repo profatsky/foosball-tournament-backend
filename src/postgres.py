@@ -1,3 +1,4 @@
+from enum import Enum
 from functools import wraps
 from typing import TypeVar, Type, Any, Iterable, Callable
 
@@ -85,7 +86,10 @@ class Table:
         for key, val in data.dict().items():
             if key not in excluded:
                 columns.append(key)
-                values.append(val)
+                if isinstance(val, Enum):
+                    values.append(val.value)
+                else:
+                    values.append(val)
 
         columns = ', '.join(columns)
         placeholders = ', '.join(f'${i}' for i in range(1, len(values) + 1))
@@ -273,7 +277,9 @@ class UserTable(Table):
     @classmethod
     @connection_check
     async def get_by_login(cls, login: str, raise_exception: bool = True) -> dto.UserWithPassword:
+        cls.model = dto.UserWithPassword
         user: dto.UserWithPassword | None = await cls._get(where=f'login = {login!r}', single=True)
+        cls.model = dto.User
         if user is None and raise_exception:
             raise exceptions.NotFoundError(f'Пользователь с логином: {login!r} не найден.')
         return user
