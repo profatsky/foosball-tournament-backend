@@ -11,7 +11,7 @@ import dto
 import exceptions
 import settings
 from bracket import TournamentBracket
-from postgres import pg, migrate, UserTable
+from postgres import pg, migrate, UserTable, Tournaments, Matches
 
 
 @asynccontextmanager
@@ -51,7 +51,8 @@ def missing_token_error_handler(_, exc):
 def auth_config():
     return [
         ('authjwt_secret_key', settings.authjwt_secret_key),
-        ('authjwt_token_location', {'cookies'})
+        ('authjwt_token_location', {'headers', 'cookies'}),
+        ('authjwt_cookie_csrf_protect', False),
     ]
 
 
@@ -104,7 +105,7 @@ async def user_detail(user_id: int) -> dto.User:
 
 
 @app.get('/teams/{team_id}', response_model=dto.Team)
-async def team_info(team_id: int):
+async def team_info(team_id: int) -> dto.Team:
     async with pg:
         return await pg.fetchrow(
             """
@@ -116,17 +117,39 @@ async def team_info(team_id: int):
         )
 
 
-@app.get('/tournaments/{tour_id}', response_model=dto.Tournament)
-async def tournaments_info(tour_id: int):
+@app.get('/tournaments', response_model=list[dto.Tournament])
+async def show_tournaments() -> list[dto.Tournament]:
     async with pg:
-        return await pg.fetchrow(
-            """SELECT * from tournaments where tour_id = $1""",
-            tour_id
-        )
+        return await Tournaments.get_list()
+
+
+@app.get('/tournaments/{tour_id}/teams', response_model=list[dto.Teams])
+async def show_teams_tournament(tour_id: int) -> list[dto.Teams]:
+    async with pg:
+        return await Tournaments.get_teams(tour_id)
+
+
+@app.get('/tournaments/{tour_id}', response_model=dto.Tournament)
+async def tournaments_info(tour_id: int) -> dto.Tournament:
+    async with pg:
+        tour: dto.Tournament | None = await Tournaments.get(tour_id)
+        if tour is None:
+            raise exceptions.NotFoundError(f"Турнира с ID={tour_id} не существует")
+        return tour
+
+
+@app.post('/tournaments', response_model=dto.Tournament)
+async def add_tournament(tournament: dto.CreateTournament, authorize: AuthJWT = Depends()) -> dto.Tournament:
+    authorize.jwt_required()
+    user_login = authorize.get_jwt_subject()
+    async with pg:
+        user = await UserTable.get_by_login(user_login)
+        tournament.owner_id = user.user_id
+        return await Tournaments.add(tournament)
 
 
 @app.get('/tournaments/{tour_id}/bracket', response_model=list[dto.Match])
-async def tournament_bracket(tour_id: int):
+async def tournament_bracket(tour_id: int) -> list[dto.Match]:
     async with pg:
         teams_records = await pg.fetch(
             """
@@ -136,8 +159,12 @@ async def tournament_bracket(tour_id: int):
             """,
             tour_id
         )
+
     if not teams_records:
         return []
+
+    if len(teams_records) < 2:
+        raise exceptions.BadRequestError('Невозможно создать сетку из одной команды')
 
     teams = [dto.Team(**dict(record.items())) for record in teams_records]
 
@@ -149,6 +176,12 @@ async def tournament_bracket(tour_id: int):
         if match.participants and match.participants[0] is None:
             match.participants.pop(0)
     return matches
+
+
+@app.get('/users/{user_id}/history-matches', response_model=list[dto.UserMatches])
+async def history_matches(user_id: int) -> list[dto.UserMatches]:
+    async with pg:
+        return await Matches.history_user(user_id)
 
 
 if __name__ == '__main__':
