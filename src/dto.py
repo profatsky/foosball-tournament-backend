@@ -74,3 +74,14 @@ class Match(BaseModel):
     winner_id: int | None = None
     parent_uuid: UUID | None = None
     started_at: datetime | None = None
+
+
+class UserMatches(BaseModel):
+    tournament_id: int
+    tournament_title: str
+    match_id: int
+    first_team: str
+    second_team: str
+    winner_id: int
+    first_image: str
+    second_image: str

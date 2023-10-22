@@ -11,7 +11,7 @@ import dto
 import exceptions
 import settings
 from bracket import TournamentBracket
-from postgres import pg, migrate, UserTable, Tournaments
+from postgres import pg, migrate, UserTable, Tournaments, Matches
 
 
 @asynccontextmanager
@@ -166,6 +166,12 @@ async def tournament_bracket(tour_id: int):
     bracket = TournamentBracket(tour_id=tour_id, teams=teams)
     matches = bracket.get_matches()
     return matches
+
+
+@app.get('/users/{user_id}/history-matches', response_model=list[dto.UserMatches])
+async def history_matches(user_id: int):
+    async with pg:
+        return await Matches.history_user(user_id)
 
 
 if __name__ == '__main__':
