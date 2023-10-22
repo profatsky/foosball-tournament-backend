@@ -2,15 +2,17 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, Extra
+
 import consts
 
 
 class UserRegistration(BaseModel):
+    class Config:
+        extra = Extra.allow
     password: str
     login: str
     nickname: str
     image_path: str | None = None
-    created_at = datetime.now()
 
 
 class UserLogin(BaseModel):
@@ -30,6 +32,15 @@ class Team(BaseModel):
     title: str
     image_path: str | None = None
     created_at: datetime
+    first_participant_id: int | None = None
+    second_participant_id: int | None = None
+
+
+class CreateTeam(BaseModel):
+    class Config:
+        extra = Extra.allow
+    title: str
+    image_path: str | None = None
     first_participant_id: int | None = None
     second_participant_id: int | None = None
 

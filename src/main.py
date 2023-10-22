@@ -11,7 +11,7 @@ import dto
 import exceptions
 import settings
 from bracket import TournamentBracket
-from postgres import pg, migrate, UserTable, Tournaments, Matches
+from postgres import pg, migrate, UserTable, Tournaments, Matches, TeamsTable
 
 
 @asynccontextmanager
@@ -68,14 +68,15 @@ def set_tokens_in_cookies(authorize: AuthJWT, subject: str):
 
 
 @app.post('/registration', response_model=dto.User)
-async def register(user: dto.UserRegistration, authorize: AuthJWT = Depends()) -> dto.User:
+async def register(user: dto.UserRegistration, authorize: AuthJWT = Depends()) -> dict:
     async with pg:
         if await UserTable.exists(user.login, user.nickname):
-            raise exceptions.BadRequestError('Пользователь с таким логином уже существует')
+            raise exceptions.BadRequestError(
+                'Пользователь с таким логином или никнеймом уже существует'
+            )
         created_user = await UserTable.add(user)
-
-    set_tokens_in_cookies(authorize, created_user.login)
-    return created_user
+    access_token = authorize.create_access_token(created_user.login)
+    return created_user.dict() | {'access_token': access_token}
 
 
 @app.post('/login', response_model=dto.User)
@@ -104,17 +105,25 @@ async def user_detail(user_id: int) -> dto.User:
         return await UserTable.get_by_id(user_id)
 
 
+@app.post('/teams/{team_id}', response_model=dto.Team)
+async def choose_team(team_id: int, authorize: AuthJWT = Depends()) -> dto.Team:
+    authorize.jwt_required()
+    user_login = authorize.get_jwt_subject()
+    async with pg:
+        user = await UserTable.get_by_login(user_login)
+        return await TeamsTable.assign_to_team(user.user_id, team_id)
+
+
+@app.post('/teams')
+async def create_team(team: dto.CreateTeam) -> dto.Team:
+    async with pg:
+        return await TeamsTable.add(team)
+
+
 @app.get('/teams/{team_id}', response_model=dto.Team)
 async def team_info(team_id: int) -> dto.Team:
     async with pg:
-        return await pg.fetchrow(
-            """
-                SELECT team_id, title, image_path, created_at, 
-                first_participant_id, second_participant_id
-                from teams where team_id = $1
-            """,
-            team_id
-        )
+        return await TeamsTable.get_by_id(team_id)
 
 
 @app.get('/tournaments', response_model=list[dto.Tournament])

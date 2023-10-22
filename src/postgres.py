@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from functools import wraps
 from typing import TypeVar, Type, Any, Iterable, Callable
@@ -212,8 +213,8 @@ async def migrate():
                 title varchar(128) not null,
                 image_path text,
                 created_at timestamp not null,
-                first_participant_id integer not null,
-                second_participant_id integer not null,
+                first_participant_id integer,
+                second_participant_id integer,
                 
                 constraint first_participant_fk foreign key (first_participant_id) references users (user_id),
                 constraint second_participant_fk foreign key (second_participant_id) references users (user_id)
@@ -296,6 +297,7 @@ class UserTable(Table):
     @connection_check
     async def add(cls, user: dto.UserRegistration) -> dto.User:
         user.password = cls.get_hashed_password(user.password)
+        user.created_at = datetime.now(None)
         return await cls._add(user)
 
     @classmethod
@@ -316,14 +318,6 @@ class Tournaments(Table):
     @classmethod
     @connection_check
     async def get_list(cls) -> list[dto.Tournament]:
-        # tournaments_records = await pg.fetch(
-        #     """
-        #         SELECT tour_id, tournaments.title as title, started_at,
-        #         finished_at, description, status, teams.title as team_title from tournaments
-        #         left join teams on tournaments.winner_id = teams.team_id
-        #     """,
-        # )
-        # return [dto.Tournament.parse_obj(dict(record.items())) for record in tournaments_records]
         return await pg.fetch(
             """
                 SELECT tour_id, tournaments.title as title, started_at,
@@ -393,3 +387,42 @@ class Matches(Table):
             """,
             user_id
         )
+
+
+class TeamsTable(Table):
+    table = 'teams'
+    model = dto.Team
+
+    @classmethod
+    async def get_by_id(cls, team_id: int) -> dto.Team:
+        team: dto.Team | None = await cls._get(where=f'team_id = {team_id}', single=True)
+        if team is None:
+            raise exceptions.NotFoundError(f'Команда с ID: {team_id} не найдена.')
+        return team
+
+    @classmethod
+    async def assign_to_team(cls, user_id: int,  team_id: int):
+        team = await cls.get_by_id(team_id)
+
+        if team.first_participant_id is None:
+            team.first_participant_id = user_id
+            updated_field = 'first_participant_id'
+        elif team.second_participant_id is None:
+            team.second_participant_id = user_id
+            updated_field = 'second_participant_id'
+        else:
+            raise exceptions.BadRequestError(f'Невозможно привязать пользователя к команде ID={team_id}')
+
+        return await cls._update(team, pk='team_id', single=True, included={updated_field})
+
+    @classmethod
+    async def add(cls, data: dto.CreateTeam) -> dto.Team:
+        data.created_at = datetime.now(None)
+
+        # проверка пользователей на существование
+        if data.first_participant_id is not None:
+            await UserTable.get_by_id(data.first_participant_id)
+        if data.second_participant_id is not None:
+            await UserTable.get_by_id(data.second_participant_id)
+
+        return await cls._add(data)
