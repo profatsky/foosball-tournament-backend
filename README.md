@@ -30,11 +30,51 @@
 
 
 ## Инструкция по установке
-Запуск базы данных
+Для проекта потребуется установить [Poetry](https://python-poetry.org/docs/) и 
+[docker](https://docs.docker.com/engine/install/) + [docker-compose](https://docs.docker.com/compose/install/linux/)
+
+### Подготовка к запуску
+
+#### Инициализация базы данных для локальной разработки
 ```bash
 docker compose up postgres -d
 # wait for a bit
 docker ps --format "{{.ID}}: {{.Names}}" | grep "foosball-tournament-backend-postgres" | cut -d: -f 1 | xargs -I {} docker exec {} bash -c "su - postgres -c \"createdb foosball\"" && echo database created
+```
+
+#### Запуск установка зависимостей через Poetry. (Если есть проблемы, отредактируйте poetry.lock)
+```bash
+poetry install
+```
+
+
+### Запуск проекта.
+#### В докере 
+Обязательно нужно заполнить поле `authjwt_secret_key`. Сделать это можно двумя способами: напрямую в 
+docker-compose.yml указать переменную
+```yaml
+<...>
+environment:
+  - DEBUG=True
+  - PYTHONPATH=/app
+  - POSTGRES_DSN=postgres://postgres:postgres@postgres/postgres
+  - authjwt_secret_key=myveryimportantsecret
+ports:
+  - "8000:8000"
+```
+
+Либо прописав такую команду: `export authjwt_secret_key=mysecretinanotherway`
+и запустив docker-compose.
+
+#### Локально
+```bash
+export DEBUG=True
+export authjwt_secret_key=myveryimportantsecret
+export POSTGRES_DSN=postgres://postgres:postgres@localhost:5433/foosball
+
+docker compose up -d postgres
+
+python src/main.py
 ```
 
 ## Требования для бэкенда
@@ -59,10 +99,10 @@ docker ps --format "{{.ID}}: {{.Names}}" | grep "foosball-tournament-backend-pos
 | Требования                                                                                                                                                   | Выполнено или нет | 
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------:|
 | 1. Создание команды путем указания имени <br/>(или ID, если реализована авторизация)                                                                         |         ✅         |
-| 2. Возможность ввода счета сыгранного матча в турнирной сетке                                                                                                |         ✅         |
+| 2. Возможность ввода счета сыгранного матча в турнирной сетке                                                                                                |         ❌         |
 | 3. Турнирная сетка должна генерироваться и корректно обрабатывать четное <br/>и нечетное количество команд (логика генерации на ваше усмотрение, без ошибок) |         ✅         |
 | 4. В одной команде может находиться 2 человека                                                                                                               |         ✅         |
-| 5. Возможность завершить турнир                                                                                                                              |         ✅         |
+| 5. Возможность завершить турнир                                                                                                                              |         ❌         |
 | 6. Хранение истории сыгранных турниров                                                                                                                       |         ✅         |
 | 7. Возможность просмотра статусов всех турниров                                                                                                              |         ✅         |
 | 8. Возможность обновить данные турнирной сетки (на крайний случай обновление <br/>страницы должно обновить турнирную таблицу)                                |         ✅         |
