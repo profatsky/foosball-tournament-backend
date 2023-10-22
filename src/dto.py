@@ -24,6 +24,10 @@ class User(BaseModel):
     image_path: str | None = None
 
 
+class UserWithPassword(User):
+    password: str
+
+
 class Tournament(BaseModel):
     tour_id: int
     title: str

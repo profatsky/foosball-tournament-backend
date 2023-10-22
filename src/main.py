@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
@@ -9,9 +10,8 @@ from fastapi_jwt_auth.exceptions import AuthJWTException
 import dto
 import exceptions
 import settings
-from postgres import pg, migrate, UserTable, fixture
 from bracket import TournamentBracket
-from fastapi.middleware.cors import CORSMiddleware
+from postgres import pg, migrate, UserTable, fixture
 
 
 @asynccontextmanager
@@ -79,10 +79,14 @@ async def register(user: dto.UserRegistration, authorize: AuthJWT = Depends()) -
 
 @app.post('/login', response_model=dto.User)
 async def login(user: dto.UserLogin, authorize: AuthJWT = Depends()) -> dto.User:
+    # предусмотрели уязвимость разных сообщений об ошибках
+    # при совпадении/несовпадении логина или пароля
     async with pg:
-        existing = await UserTable.get_by_login(user.login)
+        existing = await UserTable.get_by_login(user.login, raise_exception=False)
+    if existing is None or not UserTable.verify(user.password, existing.password):
+        raise exceptions.BadRequestError('Неправильно введен логин или пароль')
     set_tokens_in_cookies(authorize, existing.login)
-    return existing
+    return dto.User.parse_obj(existing.dict())
 
 
 @app.get('/fixtures/include')

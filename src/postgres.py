@@ -371,9 +371,9 @@ class UserTable(Table):
 
     @classmethod
     @connection_check
-    async def get_by_login(cls, login: str) -> dto.User:
-        user: dto.User | None = await cls._get(where=f'login = {login!r}', single=True)
-        if user is None:
+    async def get_by_login(cls, login: str, raise_exception: bool = True) -> dto.UserWithPassword:
+        user: dto.UserWithPassword | None = await cls._get(where=f'login = {login!r}', single=True)
+        if user is None and raise_exception:
             raise exceptions.NotFoundError(f'Пользователь с логином: {login!r} не найден.')
         return user
 
