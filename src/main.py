@@ -11,7 +11,7 @@ import dto
 import exceptions
 import settings
 from bracket import TournamentBracket
-from postgres import pg, migrate, UserTable, fixture
+from postgres import pg, migrate, UserTable
 
 
 @asynccontextmanager
@@ -89,11 +89,6 @@ async def login(user: dto.UserLogin, authorize: AuthJWT = Depends()) -> dto.User
     return dto.User.parse_obj(existing.dict())
 
 
-@app.get('/fixtures/include')
-async def include_fixtures():
-    return await fixture()
-
-
 @app.get('/users/me', response_model=dto.User)
 async def user_profile(authorize: AuthJWT = Depends()) -> dto.User:
     authorize.jwt_required()
@@ -141,6 +136,8 @@ async def tournament_bracket(tour_id: int):
             """,
             tour_id
         )
+    if not teams_records:
+        return []
 
     teams = [dto.Team(**dict(record.items())) for record in teams_records]
 

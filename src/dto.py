@@ -52,7 +52,7 @@ class TournamentTeam(Team):
 
 
 class Match(BaseModel):
-    match_id: UUID = Field(default_factory=uuid4)
+    match_uuid: UUID = Field(default_factory=uuid4)
     tour_id: int
     first_team_id: int | None = None
     second_team_id: int | None = None
