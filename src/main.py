@@ -133,7 +133,7 @@ async def tournaments_info(tour_id: int):
     async with pg:
         tour: dto.Tournament | None = await Tournaments.get(tour_id)
         if tour is None:
-            raise exceptions.NotFoundError("Данного турнира не существует")
+            raise exceptions.NotFoundError(f"Турнира с ID={tour_id} не существует")
         return tour
 
 
@@ -154,8 +154,12 @@ async def tournament_bracket(tour_id: int):
             """,
             tour_id
         )
+
     if not teams_records:
         return []
+
+    if len(teams_records) < 2:
+        raise exceptions.BadRequestError('Невозможно создать сетку из одной команды')
 
     teams = [dto.Team(**dict(record.items())) for record in teams_records]
 

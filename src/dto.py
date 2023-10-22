@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -35,6 +35,7 @@ class Team(BaseModel):
 
 class Teams(BaseModel):
     team_id: int
+    team_number: int
     title: str
     image_path: str | None = None
     created_at: datetime
@@ -47,20 +48,19 @@ class UserWithPassword(User):
 class Tournament(BaseModel):
     tour_id: int
     title: str
-    started_at: datetime = Field(default_factory=lambda _: datetime.now(timezone.utc))
-    finished_at: datetime = Field(default_factory=lambda _: datetime.now(timezone.utc))
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
     description: str
     status: str
-    winner_team: Team | None = None
+    team_title: str | None = None
 
 
 class CreateTournament(BaseModel):
     title: str
-    started_at: datetime
-    finished_at: datetime
+    started_at: datetime | None = Field(default=datetime.now(None))
+    finished_at: datetime | None = Field(default=datetime.now(None))
     description: str
     status: str
-    winner_id: int | None = None
 
 
 class TournamentTeam(Team):
