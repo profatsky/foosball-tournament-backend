@@ -367,13 +367,13 @@ class Matches(Table):
 
     @classmethod
     @connection_check
-    async def history_user(cls, user_id):
+    async def history_user(cls, user_id) -> list[dto.UserMatches]:
         return await pg.fetch(
             """
             select t.tour_id as tournament_id, t.title as tournament_title,
-             m.match_id, t1.title as first_team, t2.title as second_team,
+             m.match_uuid, t1.title as first_team, t2.title as second_team,
               t1.image_path as first_image, t2.image_path as second_image, 
-            m.winner_id
+               m.winner_id
             from matches as m 
             join teams as t1 on m.first_team_id = t1.team_id
             join teams as t2 on m.second_team_id = t2.team_id
@@ -383,5 +383,7 @@ class Matches(Table):
             or t1.second_participant_id = u.user_id
             or t2.first_participant_id = u.user_id
             or t2.second_participant_id = u.user_id) 
-            where u.user_id = $1 order by m.match_id desc
-        """, user_id)
+            where u.user_id = $1 order by m.match_uuid desc
+            """,
+            user_id
+        )
