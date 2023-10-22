@@ -11,7 +11,7 @@ import dto
 import exceptions
 import settings
 from bracket import TournamentBracket
-from postgres import pg, migrate, UserTable, Tournaments
+from postgres import pg, migrate, UserTable, Tournaments, Matches
 
 
 @asynccontextmanager
@@ -104,7 +104,7 @@ async def user_detail(user_id: int) -> dto.User:
 
 
 @app.get('/teams/{team_id}', response_model=dto.Team)
-async def team_info(team_id: int):
+async def team_info(team_id: int) -> dto.Team:
     async with pg:
         return await pg.fetchrow(
             """
@@ -117,19 +117,19 @@ async def team_info(team_id: int):
 
 
 @app.get('/tournaments', response_model=list[dto.Tournament])
-async def show_tournaments():
+async def show_tournaments() -> list[dto.Tournament]:
     async with pg:
         return await Tournaments.get_list()
 
 
 @app.get('/tournaments/{tour_id}/teams', response_model=list[dto.Teams])
-async def show_teams_tournament(tour_id: int):
+async def show_teams_tournament(tour_id: int) -> list[dto.Teams]:
     async with pg:
         return await Tournaments.get_teams(tour_id)
 
 
 @app.get('/tournaments/{tour_id}', response_model=dto.Tournament)
-async def tournaments_info(tour_id: int):
+async def tournaments_info(tour_id: int) -> dto.Tournament:
     async with pg:
         tour: dto.Tournament | None = await Tournaments.get(tour_id)
         if tour is None:
@@ -138,13 +138,13 @@ async def tournaments_info(tour_id: int):
 
 
 @app.post('/tournaments/add', response_model=dto.Tournament)
-async def add_tournament(tournament: dto.CreateTournament):
+async def add_tournament(tournament: dto.CreateTournament) -> dto.Tournament:
     async with pg:
         return await Tournaments.add(tournament)
 
 
 @app.get('/tournaments/{tour_id}/bracket', response_model=list[dto.Match])
-async def tournament_bracket(tour_id: int):
+async def tournament_bracket(tour_id: int) -> list[dto.Match]:
     async with pg:
         teams_records = await pg.fetch(
             """
@@ -166,6 +166,12 @@ async def tournament_bracket(tour_id: int):
     bracket = TournamentBracket(tour_id=tour_id, teams=teams)
     matches = bracket.get_matches()
     return matches
+
+
+@app.get('/users/{user_id}/history-matches', response_model=list[dto.UserMatches])
+async def history_matches(user_id: int) -> list[dto.UserMatches]:
+    async with pg:
+        return await Matches.history_user(user_id)
 
 
 if __name__ == '__main__':
