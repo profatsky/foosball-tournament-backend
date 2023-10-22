@@ -228,27 +228,29 @@ async def migrate():
             );
             
             create table if not exists matches (
-                match_id serial primary key,
+                match_uuid text primary key,
                 tour_id integer not null,
-                first_team_id integer not null,
-                second_team_id integer not null,
-                winner_id integer not null,
-                parent_id integer null,
+                first_team_id integer,
+                second_team_id integer,
+                winner_id integer,
+                parent_uuid text,
                 started_at timestamp not null,
                 
                 constraint tournaments_fk foreign key (tour_id) references tournaments (tour_id) on delete cascade,
                 constraint first_team_fk foreign key (first_team_id) references teams (team_id) on delete restrict,
                 constraint second_team_fk foreign key (second_team_id) references teams (team_id) on delete restrict,
                 constraint winner_team_fk foreign key (winner_id) references teams (team_id) on delete restrict,
-                constraint parent_match_fk foreign key (parent_id) references matches (match_id) on delete restrict
+                constraint parent_match_fk foreign key (parent_uuid) references matches (match_uuid) on delete restrict
             );
             
             create table if not exists tournament_teams (
                 team_id integer not null,
                 tournament_id integer not null,
                 team_number integer not null,
+                owner_id integer not null,
                 
                 constraint team_fk foreign key (team_id) references teams (team_id) on delete restrict,
+                constraint user_fk foreign key (owner_id) references users (user_id) on delete restrict,
                 constraint tournament_fk foreign key (tournament_id) references tournaments (tour_id) on delete restrict
             );
         """)
@@ -268,9 +270,9 @@ class UserTable(Table):
 
     @classmethod
     @connection_check
-    async def get_by_login(cls, login: str) -> dto.User:
-        user: dto.User | None = await cls._get(where=f'login = {login!r}', single=True)
-        if user is None:
+    async def get_by_login(cls, login: str, raise_exception: bool = True) -> dto.UserWithPassword:
+        user: dto.UserWithPassword | None = await cls._get(where=f'login = {login!r}', single=True)
+        if user is None and raise_exception:
             raise exceptions.NotFoundError(f'Пользователь с логином: {login!r} не найден.')
         return user
 
@@ -290,11 +292,11 @@ class UserTable(Table):
 
     @classmethod
     @connection_check
-    async def exists(cls, login: str) -> bool:
+    async def exists(cls, login: str, nickname: str) -> bool:
         return bool(
             await pg.fetchval(
-                f"""select true from users where login = $1""",
-                login,
+                f"""select true from users where login = $1 or nickname = $2""",
+                login, nickname
             )
         )
 

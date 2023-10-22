@@ -37,8 +37,9 @@ services:
     environment:
       - DEBUG=True
       - PYTHONPATH=/app
-      - authjwt_secret_key=iwonttellya
       - POSTGRES_DSN=postgres://postgres:postgres@postgres/postgres
+      - authjwt_secret_key=${authjwt_secret_key}
+      - REMOTE_SERVER_HOST=${REMOTE_SERVER_HOST}
     ports:
       - "8000:8000"
 

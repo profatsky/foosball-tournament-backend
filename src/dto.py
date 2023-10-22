@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
@@ -6,6 +7,7 @@ from pydantic import BaseModel, Field
 class UserRegistration(BaseModel):
     password: str
     login: str
+    nickname: str
     image_path: str | None = None
     created_at = datetime.now()
 
@@ -38,6 +40,10 @@ class Teams(BaseModel):
     created_at: datetime
 
 
+class UserWithPassword(User):
+    password: str
+
+
 class Tournament(BaseModel):
     tour_id: int
     title: str
@@ -55,3 +61,16 @@ class CreateTournament(BaseModel):
     description: str
     status: str
     winner_id: int | None = None
+
+
+class TournamentTeam(Team):
+    team_number: int
+
+
+class Match(BaseModel):
+    match_uuid: UUID = Field(default_factory=uuid4)
+    tour_id: int
+    participants: list[TournamentTeam | None] = Field(default_factory=list)
+    winner_id: int | None = None
+    parent_uuid: UUID | None = None
+    started_at: datetime | None = None
