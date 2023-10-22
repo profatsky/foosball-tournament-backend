@@ -79,7 +79,8 @@ async def register(user: dto.UserRegistration, authorize: AuthJWT = Depends()) -
 
 @app.post('/login', response_model=dto.User)
 async def login(user: dto.UserLogin, authorize: AuthJWT = Depends()) -> dto.User:
-    existing = await UserTable.get_by_login(user.login)
+    async with pg:
+        existing = await UserTable.get_by_login(user.login)
     set_tokens_in_cookies(authorize, existing.login)
     return existing
 
