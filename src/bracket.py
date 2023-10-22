@@ -41,13 +41,13 @@ class TournamentBracket:
         temp: list[dto.Team | None] = self.teams[1:]
         count = 0
 
-        for i in range(0, int(2 ** math.ceil(math.log(self.teams_length, 2)) - self.teams_length)):
+        for _ in range(0, int(2 ** math.ceil(math.log(self.teams_length, 2)) - self.teams_length)):
             temp.append(None)
 
         for _ in range(0, int(math.ceil(math.log(self.teams_length, 2)))):
             team_with_max_tournament_number = self._get_team_with_max_team_number(divided_teams)
             max_tournament_number = team_with_max_tournament_number.team_number
-            for i in range(len(divided_teams)):
+            for _ in range(len(divided_teams)):
                 index = divided_teams.index(team_with_max_tournament_number) + 1
                 divided_teams.insert(index, temp[count])
 
@@ -74,8 +74,10 @@ class TournamentBracket:
                 # Создание матча с двумя рядом стоящим в списке командами
                 match = dto.Match(
                     tour_id=self.tour_id,
-                    first_team_id=divided_teams[n].team_id,
-                    second_team_id=divided_teams[n + 1].team_id
+                    participants=[
+                        divided_teams[n],
+                        divided_teams[n + 1]
+                    ]
                 )
                 first_round.append(match)
                 self.matches.append(match)
@@ -90,18 +92,19 @@ class TournamentBracket:
         for i in range(0, len(items), 2):
 
             match = dto.Match(
-                tour_id=self.tour_id
+                tour_id=self.tour_id,
+                participants=[None, None]
             )
 
             if isinstance(items[i], dto.TournamentTeam):
-                match.first_team_id = items[i].team_id
+                match.participants[0] = items[i]
             else:
-                items[i].parent_uuid = match.match_id
+                items[i].parent_uuid = match.match_uuid
 
             if isinstance(items[i + 1], dto.TournamentTeam):
-                match.second_team_id = items[i + 1].team_id
+                match.participants[1] = items[i + 1]
             else:
-                items[i + 1].parent_uuid = match.match_id
+                items[i + 1].parent_uuid = match.match_uuid
 
             matches_on_current_round.append(match)
             self.matches.append(match)

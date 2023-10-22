@@ -54,8 +54,7 @@ class TournamentTeam(Team):
 class Match(BaseModel):
     match_uuid: UUID = Field(default_factory=uuid4)
     tour_id: int
-    first_team_id: int | None = None
-    second_team_id: int | None = None
+    participants: list[TournamentTeam | None] = Field(default_factory=list)
     winner_id: int | None = None
     parent_uuid: UUID | None = None
     started_at: datetime | None = None
